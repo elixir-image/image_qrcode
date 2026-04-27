@@ -1,4 +1,4 @@
-name: ci
+name: Elixir CI
 
 on:
   push:
@@ -6,48 +6,92 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  MIX_ENV: test
+
+permissions:
+  contents: read
+
 jobs:
   test:
+    name: "Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }}${{ matrix.lint && ' (lint)' || '' }}"
+    runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            elixir: "1.16.x"
-            otp: "26.x"
-          - os: ubuntu-latest
-            elixir: "1.17.x"
-            otp: "27.x"
-          - os: macos-latest
-            elixir: "1.17.x"
-            otp: "27.x"
-    runs-on: ${{ matrix.os }}
-    env:
-      MIX_ENV: test
-    steps:
-      - uses: actions/checkout@v4
+          # Elixir 1.17 — supports OTP 25–27
+          - elixir: "1.17-otp-26"
+            otp: "26"
+          - elixir: "1.17-otp-27"
+            otp: "27"
 
-      - name: Set up Erlang/Elixir (Linux)
-        if: runner.os == 'Linux'
+          # Elixir 1.18 — supports OTP 25–27
+          - elixir: "1.18-otp-26"
+            otp: "26"
+          - elixir: "1.18-otp-27"
+            otp: "27"
+
+          # Elixir 1.19 — supports OTP 26–28
+          - elixir: "1.19-otp-26"
+            otp: "26"
+          - elixir: "1.19-otp-27"
+            otp: "27"
+          - elixir: "1.19-otp-28"
+            otp: "28"
+
+          # Elixir 1.20 — supports OTP 27–28
+          - elixir: "1.20.0-rc.4-otp-27"
+            otp: "27"
+          - elixir: "1.20.0-rc.4-otp-28"
+            otp: "28"
+            lint: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{ matrix.otp }}
           elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
 
-      - name: Set up Erlang/Elixir (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install elixir
-
-      - uses: actions/cache@v4
+      - name: Restore dependency cache
+        uses: actions/cache@v5
         with:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-mix-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          key: mix-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('mix.lock') }}
           restore-keys: |
-            ${{ runner.os }}-mix-${{ matrix.otp }}-${{ matrix.elixir }}-
+            mix-${{ matrix.elixir }}-${{ matrix.otp }}-
 
-      - run: mix deps.get
-      - run: mix compile --warnings-as-errors
-      - run: mix test --include concurrency
+      - name: Install dependencies
+        run: mix deps.get
+
+      - name: Check formatting
+        if: matrix.lint
+        run: mix format --check-formatted
+
+      - name: Compile (warnings as errors)
+        run: mix compile --warnings-as-errors
+
+      - name: Run tests
+        run: mix test --include concurrency
+
+      - name: Restore PLT cache
+        if: matrix.lint
+        uses: actions/cache@v5
+        with:
+          path: _build/dev/dialyxir_*
+          key: plt-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('mix.lock') }}
+          restore-keys: |
+            plt-${{ matrix.elixir }}-${{ matrix.otp }}-
+
+      - name: Run dialyzer
+        if: matrix.lint
+        env:
+          MIX_ENV: dev
+        run: mix dialyzer

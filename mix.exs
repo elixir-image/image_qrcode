@@ -8,7 +8,7 @@ defmodule ImageQRCode.MixProject do
     [
       app: :image_qrcode,
       version: @version,
-      elixir: "~> 1.14",
+      elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:elixir_make] ++ Mix.compilers(),
@@ -89,6 +89,7 @@ defmodule ImageQRCode.MixProject do
         "README.md",
         "CHANGELOG.md",
         "LICENSE",
+        "logo.jpg",
         ".formatter.exs"
       ]
     ]
@@ -97,6 +98,7 @@ defmodule ImageQRCode.MixProject do
   defp docs do
     [
       main: "readme",
+      logo: "logo.jpg",
       source_ref: "v#{@version}",
       extras: [
         "README.md",
