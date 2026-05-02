@@ -28,7 +28,7 @@ defmodule ImageQRCode.MixProject do
       make_precompiler: {:nif, CCPrecompiler},
       make_precompiler_url: "#{@source_url}/releases/download/v#{@version}/@{artefact_filename}",
       make_precompiler_filename: "image_qrcode_nif",
-      make_precompiler_nif_versions: [versions: ["2.16", "2.17"]],
+      make_precompiler_nif_versions: [versions: ["2.17", "2.18"]],
       cc_precompiler: cc_precompiler()
     ]
   end

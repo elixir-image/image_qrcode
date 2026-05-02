@@ -17,14 +17,18 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MIX_ENV: prod
+    # One job per NIF ABI we want to ship for. OTP 27 emits NIF 2.17, OTP 28
+    # emits NIF 2.18 — so each matrix entry produces a distinct filename and
+    # there's no upload race on the shared release. Elixir 1.19 supports both
+    # OTP versions. Multi-OTP runtime testing happens in ci.yml.
     strategy:
       fail-fast: false
       matrix:
         include:
-          - elixir: "1.17.x"
-            otp: "26.x"
-          - elixir: "1.17.x"
-            otp: "27.x"
+          - otp: "27.x"
+            elixir: "1.19.x"
+          - otp: "28.x"
+            elixir: "1.19.x"
     steps:
       - uses: actions/checkout@v5
 
@@ -85,14 +89,18 @@ jobs:
     runs-on: macos-latest
     env:
       MIX_ENV: prod
+    # One job per NIF ABI we want to ship for. OTP 27 emits NIF 2.17, OTP 28
+    # emits NIF 2.18 — so each matrix entry produces a distinct filename and
+    # there's no upload race on the shared release. Elixir 1.19 supports both
+    # OTP versions. Multi-OTP runtime testing happens in ci.yml.
     strategy:
       fail-fast: false
       matrix:
         include:
-          - elixir: "1.17.x"
-            otp: "26.x"
-          - elixir: "1.17.x"
-            otp: "27.x"
+          - otp: "27.x"
+            elixir: "1.19.x"
+          - otp: "28.x"
+            elixir: "1.19.x"
     steps:
       - uses: actions/checkout@v5
 
