@@ -44,9 +44,34 @@ jobs:
 
       - if: steps.cache-musl.outputs.cache-hit != 'true'
         name: Install musl cross-compilers
+        # more.musl.cc and musl.cc are run by the same maintainer and either
+        # can be down independently, so we try both with retries before giving
+        # up. Once installed they are cached by the actions/cache step above.
         run: |
-          curl -fsSL https://more.musl.cc/11.2.1/x86_64-linux-musl/x86_64-linux-musl-cross.tgz | tar -xz
-          curl -fsSL https://more.musl.cc/11.2.1/x86_64-linux-musl/aarch64-linux-musl-cross.tgz | tar -xz
+          set -e
+          install_musl() {
+            local arch=$1
+            local mirrors=(
+              "https://more.musl.cc/11.2.1/x86_64-linux-musl/${arch}-linux-musl-cross.tgz"
+              "https://musl.cc/${arch}-linux-musl-cross.tgz"
+            )
+            for url in "${mirrors[@]}"; do
+              for attempt in 1 2 3; do
+                echo "::group::Download ${arch} (attempt ${attempt}): ${url}"
+                if curl -fsSL --connect-timeout 30 --max-time 600 \
+                   --retry 2 --retry-delay 5 "${url}" | tar -xz; then
+                  echo "::endgroup::"
+                  return 0
+                fi
+                echo "::endgroup::"
+                sleep 5
+              done
+            done
+            echo "::error::Failed to download ${arch} musl cross-compiler from any mirror"
+            return 1
+          }
+          install_musl x86_64
+          install_musl aarch64
 
       - name: Install GNU cross-compilers
         run: |
@@ -68,7 +93,7 @@ jobs:
       - uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: cache/*.tar.gz
+          files: cache/image_qrcode-*.tar.gz
 
   macos:
     runs-on: macos-latest
@@ -101,4 +126,4 @@ jobs:
       - uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: cache/*.tar.gz
+          files: cache/image_qrcode-*.tar.gz
