@@ -28,7 +28,10 @@ defmodule ImageQRCode.MixProject do
       make_precompiler: {:nif, CCPrecompiler},
       make_precompiler_url: "#{@source_url}/releases/download/v#{@version}/@{artefact_filename}",
       make_precompiler_filename: "image_qrcode_nif",
-      make_precompiler_nif_versions: [versions: ["2.17", "2.18"]],
+      # Currently OTP 26, 27, and 28 all expose NIF ABI 2.17 — there is no
+      # NIF 2.18 in any released OTP yet. Add "2.18" here (and a matching
+      # job to .github/workflows/precompile.yml) once a future OTP bumps it.
+      make_precompiler_nif_versions: [versions: ["2.17"]],
       cc_precompiler: cc_precompiler()
     ]
   end

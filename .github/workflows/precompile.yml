@@ -17,25 +17,18 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MIX_ENV: prod
-    # One job per NIF ABI we want to ship for. OTP 27 emits NIF 2.17, OTP 28
-    # emits NIF 2.18 — so each matrix entry produces a distinct filename and
-    # there's no upload race on the shared release. Elixir 1.19 supports both
-    # OTP versions. Multi-OTP runtime testing happens in ci.yml.
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - otp: "27.x"
-            elixir: "1.19.x"
-          - otp: "28.x"
-            elixir: "1.19.x"
+    # One job per NIF ABI shipped: currently OTP 26, 27, and 28 all expose
+    # NIF 2.17, so a single OTP 28 / Elixir 1.19 build covers everything we
+    # ship today. When a future OTP bumps the NIF ABI to 2.18, add a second
+    # matrix entry pinned to that OTP and update mix.exs's
+    # make_precompiler_nif_versions accordingly.
     steps:
       - uses: actions/checkout@v5
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{ matrix.otp }}
-          elixir-version: ${{ matrix.elixir }}
+          otp-version: "28.x"
+          elixir-version: "1.19.x"
 
       # taiki-e/setup-cross-toolchain-action pulls a prebuilt musl toolchain
       # from ghcr.io/taiki-e/rust-cross-toolchain, sidestepping musl.cc which
@@ -89,25 +82,18 @@ jobs:
     runs-on: macos-latest
     env:
       MIX_ENV: prod
-    # One job per NIF ABI we want to ship for. OTP 27 emits NIF 2.17, OTP 28
-    # emits NIF 2.18 — so each matrix entry produces a distinct filename and
-    # there's no upload race on the shared release. Elixir 1.19 supports both
-    # OTP versions. Multi-OTP runtime testing happens in ci.yml.
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - otp: "27.x"
-            elixir: "1.19.x"
-          - otp: "28.x"
-            elixir: "1.19.x"
+    # One job per NIF ABI shipped: currently OTP 26, 27, and 28 all expose
+    # NIF 2.17, so a single OTP 28 / Elixir 1.19 build covers everything we
+    # ship today. When a future OTP bumps the NIF ABI to 2.18, add a second
+    # matrix entry pinned to that OTP and update mix.exs's
+    # make_precompiler_nif_versions accordingly.
     steps:
       - uses: actions/checkout@v5
 
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{ matrix.otp }}
-          elixir-version: ${{ matrix.elixir }}
+          otp-version: "28.x"
+          elixir-version: "1.19.x"
 
       - run: mix deps.get
 
