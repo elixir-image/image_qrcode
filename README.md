@@ -26,10 +26,20 @@ def deps do
 end
 ```
 
-The NIF is shipped as a precompiled artefact for the common Linux, macOS and
-Windows targets — no C toolchain is required on those platforms. On any other
-target, `mix deps.compile` will fall back to building from the vendored
-sources, which needs only a C11 compiler and `make`.
+### Toolchain
+
+Both `image_qrcode` and its `:vix` dependency ship as precompiled NIFs on the
+common targets, so no C toolchain is required on:
+
+* macOS (x86_64, arm64)
+* Linux x86_64, aarch64 (gnu and musl), armv7-gnu
+* Windows x86_64 (MSVC)
+
+On any other target, or if the precompiled artefact download fails, `mix
+deps.compile` falls back to building from the vendored sources. In that case
+a C11 compiler and `make` are required. (`:vix` bundles its own copy of
+`libvips` as part of its precompile, so installing libvips system-wide is
+not necessary either.)
 
 ## Usage
 
@@ -50,8 +60,7 @@ Common options:
 * `:quiet` — quiet-zone width in modules (default `4`, the QR spec minimum).
 * `:version_min` / `:version_max` — bounds for the QR version (1..40).
 * `:mask` — `:auto` (default) or an integer `0..7`.
-* `:boost_ecc` — let the encoder upgrade ECC if the chosen version has
-  spare capacity (default `true`).
+* `:boost_ecc` — let the encoder upgrade ECC if the chosen version has spare capacity (default `true`).
 
 ### Decoding
 

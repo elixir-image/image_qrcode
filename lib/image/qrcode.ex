@@ -9,6 +9,7 @@ defmodule Image.QRCode do
   The standard image type for both input and output is `t:Vix.Vips.Image.t/0`.
   Conversion to and from the raw module/grayscale buffers required by the
   underlying C libraries is performed implicitly.
+
   """
 
   alias Image.QRCode.Nif
