@@ -33,45 +33,36 @@ jobs:
           otp-version: ${{ matrix.otp }}
           elixir-version: ${{ matrix.elixir }}
 
-      - name: Cache musl cross-compilers
-        id: cache-musl
-        uses: actions/cache@v5
+      # taiki-e/setup-cross-toolchain-action pulls a prebuilt musl toolchain
+      # from ghcr.io/taiki-e/rust-cross-toolchain, sidestepping musl.cc which
+      # is unreliable. The action installs binaries named with the Rust triple
+      # (x86_64-unknown-linux-musl-gcc); we symlink them to the names cc_precompiler
+      # expects (x86_64-linux-musl-gcc) so the artefact filenames stay stable.
+      - name: Install musl cross-toolchain (x86_64)
+        uses: taiki-e/setup-cross-toolchain-action@v1
         with:
-          path: |
-            x86_64-linux-musl-cross
-            aarch64-linux-musl-cross
-          key: musl-${{ runner.os }}-build
+          target: x86_64-unknown-linux-musl
 
-      - if: steps.cache-musl.outputs.cache-hit != 'true'
-        name: Install musl cross-compilers
-        # more.musl.cc and musl.cc are run by the same maintainer and either
-        # can be down independently, so we try both with retries before giving
-        # up. Once installed they are cached by the actions/cache step above.
+      - name: Install musl cross-toolchain (aarch64)
+        uses: taiki-e/setup-cross-toolchain-action@v1
+        with:
+          target: aarch64-unknown-linux-musl
+
+      - name: Map musl toolchain names for cc_precompiler
         run: |
-          set -e
-          install_musl() {
-            local arch=$1
-            local mirrors=(
-              "https://more.musl.cc/11.2.1/x86_64-linux-musl/${arch}-linux-musl-cross.tgz"
-              "https://musl.cc/${arch}-linux-musl-cross.tgz"
-            )
-            for url in "${mirrors[@]}"; do
-              for attempt in 1 2 3; do
-                echo "::group::Download ${arch} (attempt ${attempt}): ${url}"
-                if curl -fsSL --connect-timeout 30 --max-time 600 \
-                   --retry 2 --retry-delay 5 "${url}" | tar -xz; then
-                  echo "::endgroup::"
-                  return 0
-                fi
-                echo "::endgroup::"
-                sleep 5
-              done
+          set -eu
+          for arch in x86_64 aarch64; do
+            for tool in gcc g++; do
+              src="/usr/local/bin/${arch}-unknown-linux-musl-${tool}"
+              dst="/usr/local/bin/${arch}-linux-musl-${tool}"
+              if [ ! -e "$src" ]; then
+                echo "::error::Expected $src to exist after taiki-e/setup-cross-toolchain-action"
+                exit 1
+              fi
+              sudo ln -sf "$src" "$dst"
+              echo "Linked $dst -> $src"
             done
-            echo "::error::Failed to download ${arch} musl cross-compiler from any mirror"
-            return 1
-          }
-          install_musl x86_64
-          install_musl aarch64
+          done
 
       - name: Install GNU cross-compilers
         run: |
@@ -79,8 +70,6 @@ jobs:
           sudo apt-get install -y gcc make curl tar \
             gcc-aarch64-linux-gnu \
             gcc-arm-linux-gnueabihf
-          echo "$PWD/x86_64-linux-musl-cross/bin" >> $GITHUB_PATH
-          echo "$PWD/aarch64-linux-musl-cross/bin" >> $GITHUB_PATH
 
       - run: mix deps.get
 
