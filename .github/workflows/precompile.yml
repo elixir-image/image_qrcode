@@ -59,11 +59,14 @@ jobs:
           done
 
       - name: Install GNU cross-compilers
+        # cc_precompiler requires BOTH ${prefix}gcc and ${prefix}g++ for a
+        # target to be considered available, so we install the g++ packages
+        # alongside the gcc packages even though our NIF is pure C.
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc make curl tar \
-            gcc-aarch64-linux-gnu \
-            gcc-arm-linux-gnueabihf
+          sudo apt-get install -y gcc g++ make curl tar \
+            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+            gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
 
       - run: mix deps.get
 
