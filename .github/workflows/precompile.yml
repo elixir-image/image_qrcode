@@ -35,9 +35,10 @@ jobs:
 
       # taiki-e/setup-cross-toolchain-action pulls a prebuilt musl toolchain
       # from ghcr.io/taiki-e/rust-cross-toolchain, sidestepping musl.cc which
-      # is unreliable. The action installs binaries named with the Rust triple
-      # (x86_64-unknown-linux-musl-gcc); we symlink them to the names cc_precompiler
-      # expects (x86_64-linux-musl-gcc) so the artefact filenames stay stable.
+      # is unreliable. The toolchain ships binaries under both the Rust triple
+      # name (x86_64-unknown-linux-musl-gcc) AND the short triple name
+      # (x86_64-linux-musl-gcc), so cc_precompiler's existing config works
+      # against /usr/local/bin without any further mapping.
       - name: Install musl cross-toolchain (x86_64)
         uses: taiki-e/setup-cross-toolchain-action@v1
         with:
@@ -48,20 +49,13 @@ jobs:
         with:
           target: aarch64-unknown-linux-musl
 
-      - name: Map musl toolchain names for cc_precompiler
+      - name: Verify musl cross-compilers are on PATH
         run: |
           set -eu
           for arch in x86_64 aarch64; do
-            for tool in gcc g++; do
-              src="/usr/local/bin/${arch}-unknown-linux-musl-${tool}"
-              dst="/usr/local/bin/${arch}-linux-musl-${tool}"
-              if [ ! -e "$src" ]; then
-                echo "::error::Expected $src to exist after taiki-e/setup-cross-toolchain-action"
-                exit 1
-              fi
-              sudo ln -sf "$src" "$dst"
-              echo "Linked $dst -> $src"
-            done
+            command -v "${arch}-linux-musl-gcc" >/dev/null \
+              || { echo "::error::${arch}-linux-musl-gcc not found on PATH"; exit 1; }
+            "${arch}-linux-musl-gcc" --version | head -1
           done
 
       - name: Install GNU cross-compilers
