@@ -103,6 +103,7 @@ defmodule ImageQRCode.MixProject do
       main: "readme",
       logo: "logo.jpg",
       source_ref: "v#{@version}",
+      formatters: ["html", "markdown"],
       extras: [
         "README.md",
         "CHANGELOG.md",
